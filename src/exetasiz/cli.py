@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
@@ -168,7 +169,20 @@ def report_command(
         typer.echo(str(report_path.resolve()))
 
         if open_browser:
-            webbrowser.open(report_path.resolve().as_uri())
+            resolved_path = report_path.resolve()
+            opened = False
+            # On Windows, os.startfile launches the default registered browser reliably
+            if hasattr(os, "startfile"):
+                try:
+                    os.startfile(str(resolved_path))
+                    opened = True
+                except Exception:
+                    pass
+            if not opened:
+                try:
+                    webbrowser.open(resolved_path.as_uri())
+                except Exception:
+                    webbrowser.open(str(resolved_path))
     except Exception as e:
         typer.secho(f"Failed to generate report: {e}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1)
