@@ -3,19 +3,34 @@
 from __future__ import annotations
 
 import json
+import webbrowser
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import typer
 import yaml
 from dotenv import load_dotenv
 
 from exetasiz.core.dataset import DatasetLoadError, load_dataset
+from exetasiz.core.models import DatasetMetadata, ResultsEnvelope
+from exetasiz.core.persistence import (
+    RunLoadError,
+    list_saved_runs,
+    load_run,
+    save_run,
+)
 from exetasiz.evaluators.base import Evaluator
 from exetasiz.evaluators.registry import get_evaluator, list_registered_evaluators
-from exetasiz.metrics.metrics import compare_models, format_comparison_table
+from exetasiz.metrics.metrics import (
+    compare_models,
+    compute_structured_metrics,
+    format_comparison_table,
+)
 from exetasiz.providers.base import LLMProvider
 from exetasiz.providers.registry import get_provider, list_registered_providers
+from exetasiz.reporting.html_report import generate_html_report
 from exetasiz.runner.runner import Runner
+import exetasiz
 
 load_dotenv()
 
@@ -67,6 +82,98 @@ def validate_dataset_command(
         raise typer.Exit(code=1)
 
 
+@app.command("list-runs")
+def list_runs_command(
+    reports_dir: Path = typer.Option(
+        Path("reports"),
+        "--reports-dir",
+        "-d",
+        help="Base directory containing saved runs",
+    )
+) -> None:
+    """List saved evaluation runs sorted newest first."""
+    runs = list_saved_runs(reports_dir)
+    if not runs:
+        typer.echo(f"No saved runs found in '{reports_dir}'.")
+        return
+
+    import pandas as pd
+    from tabulate import tabulate
+
+    records = []
+    for r in runs:
+        run_folder = Path(r.run_dir).name
+        dt_str = r.envelope.finished_at[:19].replace("T", " ")
+        models_str = ", ".join(r.envelope.models)
+        acc_pct = f"{r.metrics.overall.accuracy * 100:.1f}%"
+        records.append({
+            "run_directory": run_folder,
+            "experiment": r.envelope.experiment_name,
+            "finished_at": dt_str,
+            "models": models_str,
+            "accuracy": acc_pct,
+        })
+
+    df = pd.DataFrame(records)
+    typer.echo(tabulate(df, headers="keys", tablefmt="simple", showindex=False))
+
+
+@app.command("report")
+def report_command(
+    run_dir: str = typer.Argument(
+        ...,
+        help="Path to run directory or 'latest' for the most recent run",
+    ),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Destination path for generated HTML report (defaults to <run_dir>/report.html)",
+    ),
+    open_browser: bool = typer.Option(
+        False,
+        "--open",
+        help="Open generated report in the default web browser",
+    ),
+    title: Optional[str] = typer.Option(
+        None,
+        "--title",
+        "-t",
+        help="Custom title for the report",
+    ),
+) -> None:
+    """Generate a standalone HTML evaluation report from saved run results."""
+    # Handle 'latest' shorthand
+    if run_dir.lower() == "latest":
+        saved_runs = list_saved_runs("reports")
+        if not saved_runs:
+            typer.secho("Error: No saved runs found in 'reports/' to select as 'latest'.", fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=1)
+        target_dir = Path(saved_runs[0].run_dir)
+    else:
+        target_dir = Path(run_dir)
+
+    try:
+        loaded = load_run(target_dir)
+    except RunLoadError as e:
+        typer.secho(f"Error loading run: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+    except Exception as e:
+        typer.secho(f"Unexpected error loading run '{target_dir}': {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        report_path = generate_html_report(loaded, output_path=output, title=title)
+        typer.secho(f"[DONE] Generated HTML report at:", fg=typer.colors.GREEN, bold=True)
+        typer.echo(str(report_path.resolve()))
+
+        if open_browser:
+            webbrowser.open(report_path.resolve().as_uri())
+    except Exception as e:
+        typer.secho(f"Failed to generate report: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+
+
 @app.command("run")
 def run_command(
     config_path: Path = typer.Argument(
@@ -83,8 +190,17 @@ def run_command(
         "-c",
         help="Show metrics breakdown grouped by test case category",
     ),
+    report: bool = typer.Option(
+        False,
+        "--report",
+        "-r",
+        help="Automatically generate a standalone HTML report upon completion",
+    ),
 ) -> None:
     """Run an evaluation experiment defined in a YAML configuration file."""
+    started_at_dt = datetime.now(timezone.utc)
+    started_at_iso = started_at_dt.isoformat()
+
     try:
         config_text = config_path.read_text(encoding="utf-8")
         config: Dict[str, Any] = yaml.safe_load(config_text)
@@ -177,35 +293,57 @@ def run_command(
 
         run_result = runner.run(progress_callback=on_step)
 
+    finished_at_dt = datetime.now(timezone.utc)
+    finished_at_iso = finished_at_dt.isoformat()
+    duration_s = max(0.001, (finished_at_dt - started_at_dt).total_seconds())
+
     typer.echo("\nExperiment Run Complete!\n")
 
-    # Generate metrics
+    # Generate comparative metrics table
     summary_df = compare_models(run_result, by_category=by_category, test_cases=dataset.test_cases)
     table_str = format_comparison_table(summary_df)
     typer.echo(table_str)
 
-    # Save reports to reports/<experiment>_<timestamp_sanitized>/
+    # Compute hierarchical StructuredMetrics
+    structured_metrics = compute_structured_metrics(run_result.results, dataset.test_cases)
+
+    # Envelope
     clean_ts = run_result.timestamp.replace(":", "-").replace(".", "-")
-    run_dir = base_output_dir / f"{experiment_name}_{clean_ts}"
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_id = f"{experiment_name}_{clean_ts}"
+    run_dir = base_output_dir / run_id
 
-    # 1. config.yaml
-    (run_dir / "config.yaml").write_text(yaml.dump(config, sort_keys=False), encoding="utf-8")
-
-    # 2. results.json
-    (run_dir / "results.json").write_text(
-        run_result.model_dump_json(indent=2),
-        encoding="utf-8",
+    envelope = ResultsEnvelope(
+        schema_version="1.0",
+        run_id=run_id,
+        experiment_name=experiment_name,
+        started_at=started_at_iso,
+        finished_at=finished_at_iso,
+        duration_seconds=duration_s,
+        dataset=DatasetMetadata(
+            name=dataset.name,
+            path=str(dataset_file),
+            num_test_cases=len(dataset.test_cases),
+        ),
+        models=[p.name for p in providers],
+        evaluators=[e.name for e in evaluators],
+        exetasiz_version=getattr(exetasiz, "__version__", "0.1.0"),
+        results=run_result.results,
     )
 
-    # 3. metrics.json
-    metrics_records = summary_df.to_dict(orient="records")
-    (run_dir / "metrics.json").write_text(
-        json.dumps(metrics_records, indent=2),
-        encoding="utf-8",
+    # Save run atomically
+    saved_path = save_run(
+        run_dir=run_dir,
+        envelope=envelope,
+        metrics=structured_metrics,
+        config_snapshot=config,
     )
 
-    typer.secho(f"\n[DONE] Artifacts saved to: {run_dir}", fg=typer.colors.GREEN, bold=True)
+    typer.secho(f"\n[DONE] Artifacts saved to: {saved_path}", fg=typer.colors.GREEN, bold=True)
+
+    if report:
+        loaded = load_run(saved_path)
+        report_file = generate_html_report(loaded)
+        typer.secho(f"[DONE] Generated HTML report at: {report_file}", fg=typer.colors.GREEN, bold=True)
 
 
 if __name__ == "__main__":

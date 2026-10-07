@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <style>
+{{ inlined_css }}
+  </style>
+</head>
+<body>
+  <div class="report-container">
+
+    <!-- 1. Header -->
+    <header class="report-header">
+      <h1>Exetasiz Evaluation Report</h1>
+      <div class="header-meta">
+        <span>Experiment: <strong>{{ run.envelope.experiment_name }}</strong></span>
+        <span>Run Date: <strong>{{ run.envelope.finished_at }}</strong></span>
+        <span>Duration: <strong>{{ "%.2f"|format(run.envelope.duration_seconds) }}s</strong></span>
+        <span>Dataset: <strong>{{ run.envelope.dataset.name }} ({{ run.envelope.dataset.num_test_cases }} test cases)</strong></span>
+        <span>Exetasiz: <strong>v{{ run.envelope.exetasiz_version }}</strong></span>
+        <span>Run ID: <code>{{ run.envelope.run_id }}</code></span>
+      </div>
+    </header>
+
+    <!-- 2. Summary Cards -->
+    <div class="summary-grid">
+      <div class="card">
+        <div class="card-title">Models Evaluated</div>
+        <div class="card-value">{{ run.envelope.models|length }}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Test Cases</div>
+        <div class="card-value">{{ run.envelope.dataset.num_test_cases }}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Total Evaluations</div>
+        <div class="card-value">{{ run.metrics.overall.total_evaluations }}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Overall Pass Rate</div>
+        <div class="card-value">{{ "%.1f"|format(run.metrics.overall.accuracy * 100) }}%</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Best Model</div>
+        <div class="card-value" style="font-size: 1.15rem; word-break: break-all;">
+          {% if best_model %}{{ best_model }} ({{ "%.1f"|format(run.metrics.by_model[best_model].accuracy * 100) }}%){% else %}N/A{% endif %}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fastest Model</div>
+        <div class="card-value" style="font-size: 1.15rem; word-break: break-all;">
+          {% if fastest_model and run.metrics.by_model[fastest_model].avg_latency_s is not none %}
+            {{ fastest_model }} ({{ "%.3f"|format(run.metrics.by_model[fastest_model].avg_latency_s) }}s)
+          {% else %}N/A{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Model Comparison Table -->
+    <section class="section">
+      <h2 class="section-title">Model Comparison Table</h2>
+      <div class="table-responsive">
+        <table id="models-table">
+          <thead>
+            <tr>
+              <th scope="col" onclick="sortTable('models-table', 0)">Model &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 1, true)">Accuracy &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 2, true)">Pass &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 3, true)">Fail &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 4, true)">Errors &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 5, true)">Fail Rate &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 6, true)">Avg Latency (s) &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 7, true)">p95 Latency (s) &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 8, true)">In Tokens &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 9, true)">Out Tokens &#x25B4;&#x25BE;</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for model, m in run.metrics.by_model.items() %}
+            <tr>
+              <td><strong>{{ model }}</strong></td>
+              <td class="num {% if best_accuracy is not none and m.accuracy == best_accuracy %}best-val{% endif %}">
+                {{ "%.1f"|format(m.accuracy * 100) }}%
+              </td>
+              <td class="num">{{ m.pass_count }}</td>
+              <td class="num">{{ m.fail_count }}</td>
+              <td class="num">{{ m.error_count }}</td>
+              <td class="num {% if m.failure_rate == 0 %}best-val{% endif %}">
+                {{ "%.1f"|format(m.failure_rate * 100) }}%
+              </td>
+              <td class="num {% if lowest_latency is not none and m.avg_latency_s == lowest_latency %}best-val{% endif %}">
+                {% if m.avg_latency_s is not none %}{{ "%.4f"|format(m.avg_latency_s) }}{% else %}-{% endif %}
+              </td>
+              <td class="num">
+                {% if m.p95_latency_s is not none %}{{ "%.4f"|format(m.p95_latency_s) }}{% else %}-{% endif %}
+              </td>
+              <td class="num">{% if m.total_input_tokens is not none %}{{ m.total_input_tokens }}{% else %}-{% endif %}</td>
+              <td class="num">{% if m.total_output_tokens is not none %}{{ m.total_output_tokens }}{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Charts -->
+    <section class="section">
+      <h2 class="section-title">Visualizations</h2>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Accuracy per Model</h3>
+          {{ chart_accuracy|safe }}
+        </div>
+        <div class="chart-card">
+          <h3>Latency per Model (Avg vs p95)</h3>
+          {{ chart_latency|safe }}
+        </div>
+        <div class="chart-card">
+          <h3>Accuracy by Category per Model</h3>
+          {{ chart_categories|safe }}
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Category Breakdown Matrix -->
+    <section class="section">
+      <h2 class="section-title">Category Breakdown</h2>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              {% for model in run.envelope.models %}
+              <th scope="col" class="num">{{ model }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td><strong>{{ cat }}</strong></td>
+              {% for model in run.envelope.models %}
+                {% set cat_metric = run.metrics.by_model_and_category.get(model, {}).get(cat) %}
+                {% if cat_metric %}
+                  {% set pct = cat_metric.accuracy * 100 %}
+                  {% set bg_color = "rgba(34, 197, 94, " ~ (0.15 + (cat_metric.accuracy * 0.45)) ~ ")" if cat_metric.accuracy >= 0.5 else "rgba(239, 68, 68, " ~ (0.15 + ((1.0 - cat_metric.accuracy) * 0.45)) ~ ")" %}
+                  <td class="num heat-cell" style="background-color: {{ bg_color }};">
+                    {{ "%.1f"|format(pct) }}%
+                  </td>
+                {% else %}
+                  <td class="num">-</td>
+                {% endif %}
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. Failures Explorer -->
+    <section class="section" id="failures-section">
+      <h2 class="section-title">Failures Explorer</h2>
+      <div class="filters-bar">
+        <input type="text" id="failure-search" class="input-control" placeholder="Search prompts, answers..." oninput="filterFailures()">
+        <select id="filter-model" class="input-control" onchange="filterFailures()">
+          <option value="">All Models</option>
+          {% for model in run.envelope.models %}
+          <option value="{{ model }}">{{ model }}</option>
+          {% endfor %}
+        </select>
+        <select id="filter-category" class="input-control" onchange="filterFailures()">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+        <label class="filter-checkbox">
+          <input type="checkbox" id="filter-errors-only" onchange="filterFailures()"> Errors Only
+        </label>
+      </div>
+
+      <div id="failures-list">
+        {% set failure_results = [] %}
+        {% for r in run.envelope.results %}
+          {% if not r.passed or r.error %}
+            {% set _ = failure_results.append(r) %}
+          {% endif %}
+        {% endfor %}
+
+        {% if failure_results|length == 0 %}
+          <div class="no-failures">
+            &#x2714; Excellent work! All evaluations passed with zero errors or failures.
+          </div>
+        {% else %}
+          {% for r in failure_results %}
+            {% set tc = test_cases_map.get(r.test_case_id) %}
+            <div class="failure-item" 
+                 data-model="{{ r.model }}" 
+                 data-category="{% if tc %}{{ tc.category }}{% else %}unknown{% endif %}" 
+                 data-error="{% if r.error %}true{% else %}false{% endif %}">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: {{ "%.2f"|format(r.score) }}</span>
+                  <strong>{{ r.model }}</strong> &bull; Case: <code>{{ r.test_case_id }}</code>
+                  {% if tc %}&bull; Category: <em>{{ tc.category }}</em>{% endif %}
+                </div>
+                <div>
+                  {% if r.error %}
+                    <span class="badge" style="background-color: var(--warning-bg); color: var(--warning);">Error</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: {% if tc %}{{ tc.prompt }}{% else %}N/A{% endif %}
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> {% if tc %}{{ tc.expected_answer }}{% else %}N/A{% endif %}
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                {{ r.generated_answer if r.generated_answer else "(None / Empty response)" }}
+              </div>
+              {% if r.error %}
+              <div class="failure-answer-box" style="border-left: 3px solid var(--danger); color: var(--danger);">
+                <div><strong>Error Details:</strong></div>
+                {{ r.error }}
+              </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- 7. All Results (Collapsible) -->
+    <details>
+      <summary>All Results ({{ run.envelope.results|length }} evaluations)</summary>
+      <div class="table-responsive" style="margin-top: 1rem;">
+        <table id="all-results-table">
+          <thead>
+            <tr>
+              <th scope="col">Case ID</th>
+              <th scope="col">Model</th>
+              <th scope="col">Evaluator</th>
+              <th scope="col">Passed</th>
+              <th scope="col" class="num">Score</th>
+              <th scope="col" class="num">Latency (s)</th>
+              <th scope="col">Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in run.envelope.results %}
+            <tr>
+              <td><code>{{ r.test_case_id }}</code></td>
+              <td>{{ r.model }}</td>
+              <td>{{ r.evaluator }}</td>
+              <td>
+                {% if r.passed %}
+                  <span class="badge badge-pass">Pass</span>
+                {% else %}
+                  <span class="badge badge-fail">Fail</span>
+                {% endif %}
+              </td>
+              <td class="num">{{ "%.2f"|format(r.score) }}</td>
+              <td class="num">{{ "%.3f"|format(r.latency_seconds) }}</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ r.generated_answer }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- 8. Configuration Snapshot (Collapsible) -->
+    <details>
+      <summary>Configuration Snapshot</summary>
+      <pre style="margin-top: 1rem;"><code>{{ config_yaml_str }}</code></pre>
+    </details>
+
+    <!-- 9. Footer -->
+    <footer class="report-footer">
+      Generated by Exetasiz v{{ run.envelope.exetasiz_version }} &bull; {{ generation_time }}
+    </footer>
+
+  </div>
+
+  <!-- Inline Vanilla JS for Sorting and Filtering (Zero External Libs) -->
+  <script>
+    function sortTable(tableId, colIdx, isNum) {
+      const table = document.getElementById(tableId);
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const header = table.querySelectorAll('th')[colIdx];
+      const asc = header.getAttribute('data-asc') !== 'true';
+      header.setAttribute('data-asc', asc);
+
+      rows.sort((a, b) => {
+        let valA = a.children[colIdx].innerText.trim().replace('%', '');
+        let valB = b.children[colIdx].innerText.trim().replace('%', '');
+        if (isNum) {
+          let numA = parseFloat(valA) || 0;
+          let numB = parseFloat(valB) || 0;
+          return asc ? numA - numB : numB - numA;
+        }
+        return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function filterFailures() {
+      const search = document.getElementById('failure-search').value.toLowerCase();
+      const model = document.getElementById('filter-model').value;
+      const category = document.getElementById('filter-category').value;
+      const errorsOnly = document.getElementById('filter-errors-only').checked;
+
+      const items = document.querySelectorAll('.failure-item');
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        const m = item.getAttribute('data-model');
+        const c = item.getAttribute('data-category');
+        const isErr = item.getAttribute('data-error') === 'true';
+
+        const matchSearch = !search || text.includes(search);
+        const matchModel = !model || m === model;
+        const matchCat = !category || c === category;
+        const matchErr = !errorsOnly || isErr;
+
+        if (matchSearch && matchModel && matchCat && matchErr) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

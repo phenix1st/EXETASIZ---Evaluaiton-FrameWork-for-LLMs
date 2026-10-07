@@ -117,11 +117,12 @@ def test_cli_run_e2e(tmp_path):
     assert (run_dir / "results.json").exists()
     assert (run_dir / "metrics.json").exists()
 
-    # Validate metrics content
+    # Validate structured metrics content
     metrics = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
-    assert len(metrics) == 2
-    perfect_metric = next(m for m in metrics if m["model"] == "mock-perfect")
-    flawed_metric = next(m for m in metrics if m["model"] == "mock-flawed")
+    assert "overall" in metrics
+    assert "by_model" in metrics
+    assert "by_category" in metrics
+    assert "by_model_and_category" in metrics
 
-    assert perfect_metric["accuracy"] == 1.0
-    assert flawed_metric["accuracy"] == 0.5
+    assert metrics["by_model"]["mock-perfect"]["accuracy"] == 1.0
+    assert metrics["by_model"]["mock-flawed"]["accuracy"] == 0.5

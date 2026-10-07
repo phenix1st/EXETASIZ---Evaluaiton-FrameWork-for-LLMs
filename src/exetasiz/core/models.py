@@ -51,3 +51,72 @@ class RunResult(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 timestamp when the run completed")
     results: List[EvalResult] = Field(..., description="List of individual evaluation results")
     config_snapshot: Dict[str, Any] = Field(default_factory=dict, description="Snapshot of the run configuration")
+
+
+class DatasetMetadata(BaseModel):
+    """Metadata describing the dataset used in an evaluation run."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., description="Dataset name")
+    path: str = Field(..., description="File path to the dataset")
+    num_test_cases: int = Field(..., ge=0, description="Total number of test cases")
+
+
+class ResultsEnvelope(BaseModel):
+    """Envelope wrapping results.json for structured persistence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = Field(default="1.0", description="Schema version of results envelope")
+    run_id: str = Field(..., description="Unique run identifier")
+    experiment_name: str = Field(..., description="Experiment name")
+    started_at: str = Field(..., description="ISO 8601 timestamp when the run started")
+    finished_at: str = Field(..., description="ISO 8601 timestamp when the run completed")
+    duration_seconds: float = Field(..., ge=0.0, description="Total duration of run in seconds")
+    dataset: DatasetMetadata = Field(..., description="Dataset metadata")
+    models: List[str] = Field(..., description="List of evaluated model names")
+    evaluators: List[str] = Field(..., description="List of evaluator names used")
+    exetasiz_version: str = Field(..., description="Version of Exetasiz that executed the run")
+    results: List[EvalResult] = Field(..., description="Individual evaluation results")
+
+
+class AggregateMetric(BaseModel):
+    """Summary metrics for a group of evaluation results."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total_evaluations: int = Field(..., ge=0, description="Total evaluations in this group")
+    accuracy: float = Field(..., ge=0.0, le=1.0, description="Mean score (accuracy)")
+    pass_count: int = Field(..., ge=0, description="Number of evaluations marked passed")
+    fail_count: int = Field(..., ge=0, description="Number of failed evaluations")
+    error_count: int = Field(..., ge=0, description="Number of provider/evaluator errors")
+    failure_rate: float = Field(..., ge=0.0, le=1.0, description="Error failure rate")
+    avg_latency_s: Optional[float] = Field(default=None, description="Average latency in seconds")
+    p95_latency_s: Optional[float] = Field(default=None, description="95th percentile latency in seconds")
+    total_input_tokens: Optional[int] = Field(default=None, description="Sum of input tokens")
+    total_output_tokens: Optional[int] = Field(default=None, description="Sum of output tokens")
+
+
+class StructuredMetrics(BaseModel):
+    """Hierarchical metrics document saved in metrics.json."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    overall: AggregateMetric = Field(..., description="Overall metrics across all models and test cases")
+    by_model: Dict[str, AggregateMetric] = Field(..., description="Metrics aggregated per model")
+    by_category: Dict[str, AggregateMetric] = Field(..., description="Metrics aggregated per category")
+    by_model_and_category: Dict[str, Dict[str, AggregateMetric]] = Field(
+        ..., description="Metrics grouped by model and category"
+    )
+
+
+class LoadedRun(BaseModel):
+    """Container for an in-memory loaded run folder."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    envelope: ResultsEnvelope = Field(..., description="Parsed results envelope")
+    metrics: StructuredMetrics = Field(..., description="Parsed structured metrics")
+    config_snapshot: Dict[str, Any] = Field(default_factory=dict, description="Parsed config snapshot")
+    run_dir: str = Field(..., description="Absolute string path to run directory")

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Union
 import pandas as pd
-from exetasiz.core.models import EvalResult, RunResult, TestCase
+from exetasiz.core.models import AggregateMetric, EvalResult, RunResult, StructuredMetrics, TestCase
 
 
 def results_to_dataframe(
@@ -48,6 +48,87 @@ def results_to_dataframe(
             "has_error", "error", "generated_answer"
         ])
     return df
+
+
+def compute_structured_metrics(
+    eval_results: List[EvalResult],
+    test_cases: List[TestCase],
+) -> StructuredMetrics:
+    """Compute hierarchical StructuredMetrics (overall, by_model, by_category, by_model_and_category)."""
+    df = results_to_dataframe(eval_results, test_cases=test_cases)
+
+    def _to_metric(subset: pd.DataFrame) -> AggregateMetric:
+        total = len(subset)
+        if total == 0:
+            return AggregateMetric(
+                total_evaluations=0,
+                accuracy=0.0,
+                pass_count=0,
+                fail_count=0,
+                error_count=0,
+                failure_rate=0.0,
+                avg_latency_s=None,
+                p95_latency_s=None,
+                total_input_tokens=None,
+                total_output_tokens=None,
+            )
+
+        passed = int(subset["passed"].sum())
+        errors = int(subset["has_error"].sum())
+        fails = total - passed
+        acc = float(subset["score"].mean())
+        fail_rate = float(errors / total)
+
+        valid_lat = subset["latency_seconds"].dropna()
+        # only consider latencies > 0 for stats
+        valid_lat = valid_lat[valid_lat > 0]
+        avg_lat = round(float(valid_lat.mean()), 4) if not valid_lat.empty else None
+        p95_lat = round(float(valid_lat.quantile(0.95)), 4) if not valid_lat.empty else None
+
+        valid_in = subset["input_tokens"].dropna()
+        valid_out = subset["output_tokens"].dropna()
+        tot_in = int(valid_in.sum()) if not valid_in.empty else None
+        tot_out = int(valid_out.sum()) if not valid_out.empty else None
+
+        return AggregateMetric(
+            total_evaluations=total,
+            accuracy=round(acc, 4),
+            pass_count=passed,
+            fail_count=fails,
+            error_count=errors,
+            failure_rate=round(fail_rate, 4),
+            avg_latency_s=avg_lat,
+            p95_latency_s=p95_lat,
+            total_input_tokens=tot_in,
+            total_output_tokens=tot_out,
+        )
+
+    # 1. Overall
+    overall_metric = _to_metric(df)
+
+    # 2. By model
+    by_model: Dict[str, AggregateMetric] = {}
+    for model_name, group in df.groupby("model"):
+        by_model[str(model_name)] = _to_metric(group)
+
+    # 3. By category
+    by_category: Dict[str, AggregateMetric] = {}
+    for cat_name, group in df.groupby("category"):
+        by_category[str(cat_name)] = _to_metric(group)
+
+    # 4. By model and category
+    by_model_and_category: Dict[str, Dict[str, AggregateMetric]] = {}
+    for model_name in by_model.keys():
+        by_model_and_category[model_name] = {}
+    for (model_name, cat_name), group in df.groupby(["model", "category"]):
+        by_model_and_category[str(model_name)][str(cat_name)] = _to_metric(group)
+
+    return StructuredMetrics(
+        overall=overall_metric,
+        by_model=by_model,
+        by_category=by_category,
+        by_model_and_category=by_model_and_category,
+    )
 
 
 def compare_models(

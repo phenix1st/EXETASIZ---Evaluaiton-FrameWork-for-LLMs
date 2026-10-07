@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exetasiz Report - basic_qa_demo</title>
+  <style>
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, &#34;Segoe UI&#34;, Roboto, &#34;Helvetica Neue&#34;, Arial, sans-serif, &#34;Apple Color Emoji&#34;, &#34;Segoe UI Emoji&#34;;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --accent-light: #eff6ff;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --warning: #d97706;
+  --warning-bg: #fef3c7;
+  --chart-grid: #e2e8f0;
+  --chart-text: #64748b;
+  --chart-text-strong: #0f172a;
+  --chart-bg-bar: #f1f5f9;
+  --highlight-best: #dcfce7;
+  --code-bg: #f1f5f9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #090d16;
+    --card-bg: #131b2e;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border: #1e293b;
+    --accent: #3b82f6;
+    --accent-light: #172554;
+    --success: #22c55e;
+    --success-bg: #052e16;
+    --danger: #ef4444;
+    --danger-bg: #450a0a;
+    --warning: #f59e0b;
+    --warning-bg: #451a03;
+    --chart-grid: #1e293b;
+    --chart-text: #94a3b8;
+    --chart-text-strong: #f1f5f9;
+    --chart-bg-bar: #1e293b;
+    --highlight-best: #064e3b;
+    --code-bg: #0f172a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 2rem 1.5rem;
+}
+
+.report-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.report-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.header-meta span strong {
+  color: var(--text);
+}
+
+/* Cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Sections */
+.section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Tables */
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: var(--bg);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th:hover {
+  color: var(--accent);
+}
+
+tr:hover td {
+  background-color: var(--accent-light);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.best-val {
+  background-color: var(--highlight-best);
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-pass {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.badge-fail {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.chart-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+
+.chart-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Heatmap Table */
+.heat-cell {
+  text-align: center;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+/* Failures Explorer */
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.input-control {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.failure-item {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+
+.failure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.failure-prompt {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.failure-answer-box {
+  background: var(--code-bg);
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.825rem;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.no-failures {
+  padding: 2rem;
+  text-align: center;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* Collapsible Details */
+details {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: var(--card-bg);
+  margin-bottom: 1.5rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+  outline: none;
+}
+
+details[open] summary {
+  margin-bottom: 1rem;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.825rem;
+}
+
+/* Footer */
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Print Stylesheet */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .report-container {
+    max-width: 100% !important;
+  }
+  .filters-bar {
+    display: none !important;
+  }
+  details {
+    border: none !important;
+  }
+  details &gt; * {
+    display: block !important;
+  }
+  .card, .section {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="report-container">
+
+    <!-- 1. Header -->
+    <header class="report-header">
+      <h1>Exetasiz Evaluation Report</h1>
+      <div class="header-meta">
+        <span>Experiment: <strong>basic_qa_demo</strong></span>
+        <span>Run Date: <strong>2026-10-07T22:18:19.537310+00:00</strong></span>
+        <span>Duration: <strong>0.22s</strong></span>
+        <span>Dataset: <strong>sample_qa (10 test cases)</strong></span>
+        <span>Exetasiz: <strong>v0.1.0</strong></span>
+        <span>Run ID: <code>basic_qa_demo_2026-10-07T22-18-19-537259+00-00</code></span>
+      </div>
+    </header>
+
+    <!-- 2. Summary Cards -->
+    <div class="summary-grid">
+      <div class="card">
+        <div class="card-title">Models Evaluated</div>
+        <div class="card-value">2</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Test Cases</div>
+        <div class="card-value">10</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Total Evaluations</div>
+        <div class="card-value">20</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Overall Pass Rate</div>
+        <div class="card-value">75.0%</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Best Model</div>
+        <div class="card-value" style="font-size: 1.15rem; word-break: break-all;">
+          mock-perfect (100.0%)
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fastest Model</div>
+        <div class="card-value" style="font-size: 1.15rem; word-break: break-all;">
+          
+            mock-flawed (0.010s)
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Model Comparison Table -->
+    <section class="section">
+      <h2 class="section-title">Model Comparison Table</h2>
+      <div class="table-responsive">
+        <table id="models-table">
+          <thead>
+            <tr>
+              <th scope="col" onclick="sortTable('models-table', 0)">Model &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 1, true)">Accuracy &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 2, true)">Pass &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 3, true)">Fail &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 4, true)">Errors &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 5, true)">Fail Rate &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 6, true)">Avg Latency (s) &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 7, true)">p95 Latency (s) &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 8, true)">In Tokens &#x25B4;&#x25BE;</th>
+              <th scope="col" class="num" onclick="sortTable('models-table', 9, true)">Out Tokens &#x25B4;&#x25BE;</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td><strong>mock-flawed</strong></td>
+              <td class="num ">
+                50.0%
+              </td>
+              <td class="num">5</td>
+              <td class="num">5</td>
+              <td class="num">0</td>
+              <td class="num best-val">
+                0.0%
+              </td>
+              <td class="num best-val">
+                0.0104
+              </td>
+              <td class="num">
+                0.0108
+              </td>
+              <td class="num">100</td>
+              <td class="num">50</td>
+            </tr>
+            
+            <tr>
+              <td><strong>mock-perfect</strong></td>
+              <td class="num best-val">
+                100.0%
+              </td>
+              <td class="num">10</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="num best-val">
+                0.0%
+              </td>
+              <td class="num best-val">
+                0.0104
+              </td>
+              <td class="num">
+                0.0107
+              </td>
+              <td class="num">100</td>
+              <td class="num">50</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Charts -->
+    <section class="section">
+      <h2 class="section-title">Visualizations</h2>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Accuracy per Model</h3>
+          <svg class="exetasiz-chart" width="100%" height="158" viewBox="0 0 720 158" role="img" aria-label="Model Accuracy Comparison Chart" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .grid-line { stroke: var(--chart-grid, #e2e8f0); stroke-width: 1; stroke-dasharray: 3 3; }
+    .axis-label { fill: var(--chart-text, #64748b); font-size: 11px; font-family: inherit; }
+    .model-label { fill: var(--chart-text-strong, #1e293b); font-size: 12px; font-weight: 500; font-family: inherit; text-anchor: end; }
+    .val-label { fill: var(--chart-text-strong, #1e293b); font-size: 11px; font-weight: 600; font-family: inherit; }
+    .bar-rect { rx: 4; transition: opacity 0.2s; }
+    .bar-rect:hover { opacity: 0.85; }
+  </style>
+  <line x1="160.0" y1="35" x2="160.0" y2="123" class="grid-line" />
+  <text x="160.0" y="139" text-anchor="middle" class="axis-label">0%</text>
+  <line x1="280.0" y1="35" x2="280.0" y2="123" class="grid-line" />
+  <text x="280.0" y="139" text-anchor="middle" class="axis-label">25%</text>
+  <line x1="400.0" y1="35" x2="400.0" y2="123" class="grid-line" />
+  <text x="400.0" y="139" text-anchor="middle" class="axis-label">50%</text>
+  <line x1="520.0" y1="35" x2="520.0" y2="123" class="grid-line" />
+  <text x="520.0" y="139" text-anchor="middle" class="axis-label">75%</text>
+  <line x1="640.0" y1="35" x2="640.0" y2="123" class="grid-line" />
+  <text x="640.0" y="139" text-anchor="middle" class="axis-label">100%</text>
+  <text x="148" y="53.0" class="model-label">mock-flawed</text>
+  <rect x="160" y="35" width="480" height="28" fill="var(--chart-bg-bar, #f1f5f9)" rx="4" />
+  <rect x="160" y="35" width="240.0" height="28" fill="#4361ee" class="bar-rect" />
+  <text x="408.0" y="53.0" class="val-label">50.0%</text>
+  <text x="148" y="97.0" class="model-label">mock-perfect</text>
+  <rect x="160" y="79" width="480" height="28" fill="var(--chart-bg-bar, #f1f5f9)" rx="4" />
+  <rect x="160" y="79" width="480.0" height="28" fill="#3a0ca3" class="bar-rect" />
+  <text x="648.0" y="97.0" class="val-label">100.0%</text>
+</svg>
+        </div>
+        <div class="chart-card">
+          <h3>Latency per Model (Avg vs p95)</h3>
+          <svg class="exetasiz-chart" width="100%" height="204" viewBox="0 0 720 204" role="img" aria-label="Model Latency Comparison Chart" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .grid-line { stroke: var(--chart-grid, #e2e8f0); stroke-width: 1; stroke-dasharray: 3 3; }
+    .axis-label { fill: var(--chart-text, #64748b); font-size: 11px; font-family: inherit; }
+    .model-label { fill: var(--chart-text-strong, #1e293b); font-size: 12px; font-weight: 500; font-family: inherit; text-anchor: end; }
+    .val-label { fill: var(--chart-text-strong, #1e293b); font-size: 10px; font-family: inherit; }
+    .legend-text { fill: var(--chart-text, #64748b); font-size: 11px; font-family: inherit; }
+  </style>
+  <g transform="translate(160, 15)">
+    <rect x="0" y="0" width="12" height="12" fill="#4361ee" rx="2" />
+    <text x="18" y="10" class="legend-text">Avg Latency (s)</text>
+    <rect x="130" y="0" width="12" height="12" fill="#f72585" rx="2" />
+    <text x="148" y="10" class="legend-text">p95 Latency (s)</text>
+  </g>
+  <line x1="160.0" y1="40" x2="160.0" y2="164" class="grid-line" />
+  <text x="160.0" y="180" text-anchor="middle" class="axis-label">0.000s</text>
+  <line x1="400.0" y1="40" x2="400.0" y2="164" class="grid-line" />
+  <text x="400.0" y="180" text-anchor="middle" class="axis-label">0.006s</text>
+  <line x1="640.0" y1="40" x2="640.0" y2="164" class="grid-line" />
+  <text x="640.0" y="180" text-anchor="middle" class="axis-label">0.012s</text>
+  <text x="148" y="65.0" class="model-label">mock-flawed</text>
+  <rect x="160" y="40" width="401.9" height="16" fill="#4361ee" rx="3" />
+  <text x="567.9" y="53.0" class="val-label">0.010s</text>
+  <rect x="160" y="60" width="417.4" height="16" fill="#f72585" rx="3" />
+  <text x="583.4" y="73.0" class="val-label">0.011s</text>
+  <text x="148" y="127.0" class="model-label">mock-perfect</text>
+  <rect x="160" y="102" width="401.9" height="16" fill="#4361ee" rx="3" />
+  <text x="567.9" y="115.0" class="val-label">0.010s</text>
+  <rect x="160" y="122" width="413.5" height="16" fill="#f72585" rx="3" />
+  <text x="579.5" y="135.0" class="val-label">0.011s</text>
+</svg>
+        </div>
+        <div class="chart-card">
+          <h3>Accuracy by Category per Model</h3>
+          <svg class="exetasiz-chart" width="100%" height="360" viewBox="0 0 720 360" role="img" aria-label="Category Accuracy Grouped Bar Chart" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .grid-line { stroke: var(--chart-grid, #e2e8f0); stroke-width: 1; stroke-dasharray: 3 3; }
+    .axis-label { fill: var(--chart-text, #64748b); font-size: 11px; font-family: inherit; }
+    .category-label { fill: var(--chart-text-strong, #1e293b); font-size: 12px; font-weight: 600; font-family: inherit; text-anchor: middle; }
+    .legend-text { fill: var(--chart-text, #64748b); font-size: 11px; font-family: inherit; }
+    .cat-bar { rx: 3; }
+  </style>
+  <g transform="translate(60, 20)">    <rect x="0" y="0" width="10" height="10" fill="#4361ee" rx="2" />    <text x="14" y="9" class="legend-text">mock-flawed</text>  </g>
+  <g transform="translate(183, 20)">    <rect x="0" y="0" width="10" height="10" fill="#3a0ca3" rx="2" />    <text x="14" y="9" class="legend-text">mock-perfect</text>  </g>
+  <line x1="60" y1="300.0" x2="680" y2="300.0" class="grid-line" />
+  <text x="52" y="304.0" text-anchor="end" class="axis-label">0%</text>
+  <line x1="60" y1="240.0" x2="680" y2="240.0" class="grid-line" />
+  <text x="52" y="244.0" text-anchor="end" class="axis-label">25%</text>
+  <line x1="60" y1="180.0" x2="680" y2="180.0" class="grid-line" />
+  <text x="52" y="184.0" text-anchor="end" class="axis-label">50%</text>
+  <line x1="60" y1="120.0" x2="680" y2="120.0" class="grid-line" />
+  <text x="52" y="124.0" text-anchor="end" class="axis-label">75%</text>
+  <line x1="60" y1="60.0" x2="680" y2="60.0" class="grid-line" />
+  <text x="52" y="64.0" text-anchor="end" class="axis-label">100%</text>
+  <rect x="133.3" y="140.0" width="28.0" height="160.0" fill="#4361ee" class="cat-bar"><title>mock-flawed - classification: 66.7%</title></rect>
+  <rect x="165.3" y="60.0" width="28.0" height="240.0" fill="#3a0ca3" class="cat-bar"><title>mock-perfect - classification: 100.0%</title></rect>
+  <text x="163.3" y="322" class="category-label">classification</text>
+  <rect x="340.0" y="180.0" width="28.0" height="120.0" fill="#4361ee" class="cat-bar"><title>mock-flawed - factual: 50.0%</title></rect>
+  <rect x="372.0" y="60.0" width="28.0" height="240.0" fill="#3a0ca3" class="cat-bar"><title>mock-perfect - factual: 100.0%</title></rect>
+  <text x="370.0" y="322" class="category-label">factual</text>
+  <rect x="546.7" y="220.0" width="28.0" height="80.0" fill="#4361ee" class="cat-bar"><title>mock-flawed - reasoning: 33.3%</title></rect>
+  <rect x="578.7" y="60.0" width="28.0" height="240.0" fill="#3a0ca3" class="cat-bar"><title>mock-perfect - reasoning: 100.0%</title></rect>
+  <text x="576.7" y="322" class="category-label">reasoning</text>
+</svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Category Breakdown Matrix -->
+    <section class="section">
+      <h2 class="section-title">Category Breakdown</h2>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              
+              <th scope="col" class="num">mock-perfect</th>
+              
+              <th scope="col" class="num">mock-flawed</th>
+              
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td><strong>classification</strong></td>
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(34, 197, 94, 0.6);">
+                    100.0%
+                  </td>
+                
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(34, 197, 94, 0.45001499999999994);">
+                    66.7%
+                  </td>
+                
+              
+            </tr>
+            
+            <tr>
+              <td><strong>factual</strong></td>
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(34, 197, 94, 0.6);">
+                    100.0%
+                  </td>
+                
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(34, 197, 94, 0.375);">
+                    50.0%
+                  </td>
+                
+              
+            </tr>
+            
+            <tr>
+              <td><strong>reasoning</strong></td>
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(34, 197, 94, 0.6);">
+                    100.0%
+                  </td>
+                
+              
+                
+                
+                  
+                  
+                  <td class="num heat-cell" style="background-color: rgba(239, 68, 68, 0.45001500000000005);">
+                    33.3%
+                  </td>
+                
+              
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. Failures Explorer -->
+    <section class="section" id="failures-section">
+      <h2 class="section-title">Failures Explorer</h2>
+      <div class="filters-bar">
+        <input type="text" id="failure-search" class="input-control" placeholder="Search prompts, answers..." oninput="filterFailures()">
+        <select id="filter-model" class="input-control" onchange="filterFailures()">
+          <option value="">All Models</option>
+          
+          <option value="mock-perfect">mock-perfect</option>
+          
+          <option value="mock-flawed">mock-flawed</option>
+          
+        </select>
+        <select id="filter-category" class="input-control" onchange="filterFailures()">
+          <option value="">All Categories</option>
+          
+          <option value="classification">classification</option>
+          
+          <option value="factual">factual</option>
+          
+          <option value="reasoning">reasoning</option>
+          
+        </select>
+        <label class="filter-checkbox">
+          <input type="checkbox" id="filter-errors-only" onchange="filterFailures()"> Errors Only
+        </label>
+      </div>
+
+      <div id="failures-list">
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+          
+            
+          
+        
+          
+        
+
+        
+          
+            
+            <div class="failure-item" 
+                 data-model="mock-flawed" 
+                 data-category="reasoning" 
+                 data-error="false">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: 0.00</span>
+                  <strong>mock-flawed</strong> &bull; Case: <code>math_001</code>
+                  &bull; Category: <em>reasoning</em>
+                </div>
+                <div>
+                  
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: What is 15% of 240?
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> 36
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                42
+              </div>
+              
+            </div>
+          
+            
+            <div class="failure-item" 
+                 data-model="mock-flawed" 
+                 data-category="reasoning" 
+                 data-error="false">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: 0.00</span>
+                  <strong>mock-flawed</strong> &bull; Case: <code>math_003</code>
+                  &bull; Category: <em>reasoning</em>
+                </div>
+                <div>
+                  
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: What is 7 multiplied by 8?
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> 56
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                54
+              </div>
+              
+            </div>
+          
+            
+            <div class="failure-item" 
+                 data-model="mock-flawed" 
+                 data-category="factual" 
+                 data-error="false">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: 0.00</span>
+                  <strong>mock-flawed</strong> &bull; Case: <code>fact_002</code>
+                  &bull; Category: <em>factual</em>
+                </div>
+                <div>
+                  
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: Which planet is known as the Red Planet?
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> Mars
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                Jupiter
+              </div>
+              
+            </div>
+          
+            
+            <div class="failure-item" 
+                 data-model="mock-flawed" 
+                 data-category="factual" 
+                 data-error="false">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: 0.00</span>
+                  <strong>mock-flawed</strong> &bull; Case: <code>fact_004</code>
+                  &bull; Category: <em>factual</em>
+                </div>
+                <div>
+                  
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: What chemical element has the atomic symbol &#39;Au&#39;?
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> Gold
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                Silver
+              </div>
+              
+            </div>
+          
+            
+            <div class="failure-item" 
+                 data-model="mock-flawed" 
+                 data-category="classification" 
+                 data-error="false">
+              <div class="failure-header">
+                <div>
+                  <span class="badge badge-fail">Score: 0.00</span>
+                  <strong>mock-flawed</strong> &bull; Case: <code>class_002</code>
+                  &bull; Category: <em>classification</em>
+                </div>
+                <div>
+                  
+                </div>
+              </div>
+              <div class="failure-prompt">
+                Prompt: Classify the sentiment of: &#39;The service was terrible and slow.&#39; (positive/negative/neutral)
+              </div>
+              <div>
+                <strong>Expected Answer:</strong> negative
+              </div>
+              <div class="failure-answer-box">
+                <div><strong>Generated Answer:</strong></div>
+                neutral
+              </div>
+              
+            </div>
+          
+        
+      </div>
+    </section>
+
+    <!-- 7. All Results (Collapsible) -->
+    <details>
+      <summary>All Results (20 evaluations)</summary>
+      <div class="table-responsive" style="margin-top: 1rem;">
+        <table id="all-results-table">
+          <thead>
+            <tr>
+              <th scope="col">Case ID</th>
+              <th scope="col">Model</th>
+              <th scope="col">Evaluator</th>
+              <th scope="col">Passed</th>
+              <th scope="col" class="num">Score</th>
+              <th scope="col" class="num">Latency (s)</th>
+              <th scope="col">Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td><code>math_001</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                36
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>math_002</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                150
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>math_003</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                56
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_001</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Paris
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_002</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Mars
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_003</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                William Shakespeare
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_004</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Gold
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_001</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                positive
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_002</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                negative
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_003</code></td>
+              <td>mock-perfect</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                bird
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>math_001</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-fail">Fail</span>
+                
+              </td>
+              <td class="num">0.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                42
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>math_002</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                150
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>math_003</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-fail">Fail</span>
+                
+              </td>
+              <td class="num">0.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                54
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_001</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Paris
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_002</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-fail">Fail</span>
+                
+              </td>
+              <td class="num">0.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Jupiter
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_003</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                William Shakespeare
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>fact_004</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-fail">Fail</span>
+                
+              </td>
+              <td class="num">0.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Silver
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_001</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                positive
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_002</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-fail">Fail</span>
+                
+              </td>
+              <td class="num">0.00</td>
+              <td class="num">0.011</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                neutral
+              </td>
+            </tr>
+            
+            <tr>
+              <td><code>class_003</code></td>
+              <td>mock-flawed</td>
+              <td>exact_match</td>
+              <td>
+                
+                  <span class="badge badge-pass">Pass</span>
+                
+              </td>
+              <td class="num">1.00</td>
+              <td class="num">0.010</td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                bird
+              </td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- 8. Configuration Snapshot (Collapsible) -->
+    <details>
+      <summary>Configuration Snapshot</summary>
+      <pre style="margin-top: 1rem;"><code>name: basic_qa_demo
+dataset: datasets/sample_qa.json
+models:
+- provider: mock
+  model: mock-perfect
+  name: mock-perfect
+  responses:
+    What is 15% of 240?: &#39;36&#39;
+    If a train travels at 60 mph for 2.5 hours, how many miles does it travel?: &#39;150&#39;
+    What is 7 multiplied by 8?: &#39;56&#39;
+    What is the capital of France?: Paris
+    Which planet is known as the Red Planet?: Mars
+    Who wrote &#39;Hamlet&#39;?: William Shakespeare
+    What chemical element has the atomic symbol &#39;Au&#39;?: Gold
+    &#39;Classify the sentiment of: &#39;&#39;I absolutely love this new device!&#39;&#39; (positive/negative/neutral)&#39;: positive
+    &#39;Classify the sentiment of: &#39;&#39;The service was terrible and slow.&#39;&#39; (positive/negative/neutral)&#39;: negative
+    &#39;Classify the animal: &#39;&#39;Eagle&#39;&#39; (bird/mammal/reptile)&#39;: bird
+- provider: mock
+  model: mock-flawed
+  name: mock-flawed
+  responses:
+    What is 15% of 240?: &#39;42&#39;
+    If a train travels at 60 mph for 2.5 hours, how many miles does it travel?: &#39;150&#39;
+    What is 7 multiplied by 8?: &#39;54&#39;
+    What is the capital of France?: Paris
+    Which planet is known as the Red Planet?: Jupiter
+    Who wrote &#39;Hamlet&#39;?: William Shakespeare
+    What chemical element has the atomic symbol &#39;Au&#39;?: Silver
+    &#39;Classify the sentiment of: &#39;&#39;I absolutely love this new device!&#39;&#39; (positive/negative/neutral)&#39;: positive
+    &#39;Classify the sentiment of: &#39;&#39;The service was terrible and slow.&#39;&#39; (positive/negative/neutral)&#39;: neutral
+    &#39;Classify the animal: &#39;&#39;Eagle&#39;&#39; (bird/mammal/reptile)&#39;: bird
+evaluators:
+- exact_match
+output_dir: reports/
+</code></pre>
+    </details>
+
+    <!-- 9. Footer -->
+    <footer class="report-footer">
+      Generated by Exetasiz v0.1.0 &bull; 2026-10-07 22:18:57 UTC
+    </footer>
+
+  </div>
+
+  <!-- Inline Vanilla JS for Sorting and Filtering (Zero External Libs) -->
+  <script>
+    function sortTable(tableId, colIdx, isNum) {
+      const table = document.getElementById(tableId);
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const header = table.querySelectorAll('th')[colIdx];
+      const asc = header.getAttribute('data-asc') !== 'true';
+      header.setAttribute('data-asc', asc);
+
+      rows.sort((a, b) => {
+        let valA = a.children[colIdx].innerText.trim().replace('%', '');
+        let valB = b.children[colIdx].innerText.trim().replace('%', '');
+        if (isNum) {
+          let numA = parseFloat(valA) || 0;
+          let numB = parseFloat(valB) || 0;
+          return asc ? numA - numB : numB - numA;
+        }
+        return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function filterFailures() {
+      const search = document.getElementById('failure-search').value.toLowerCase();
+      const model = document.getElementById('filter-model').value;
+      const category = document.getElementById('filter-category').value;
+      const errorsOnly = document.getElementById('filter-errors-only').checked;
+
+      const items = document.querySelectorAll('.failure-item');
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        const m = item.getAttribute('data-model');
+        const c = item.getAttribute('data-category');
+        const isErr = item.getAttribute('data-error') === 'true';
+
+        const matchSearch = !search || text.includes(search);
+        const matchModel = !model || m === model;
+        const matchCat = !category || c === category;
+        const matchErr = !errorsOnly || isErr;
+
+        if (matchSearch && matchModel && matchCat && matchErr) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

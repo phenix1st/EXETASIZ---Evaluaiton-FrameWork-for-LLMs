@@ -59,10 +59,81 @@ Experiment Run Complete!
 ✓ Artifacts saved to: reports/basic_qa_demo_...
 ```
 
-Artifacts produced:
-- `reports/<run_id>/config.yaml`: Configuration snapshot
-- `reports/<run_id>/results.json`: Complete individual test evaluations and answers
-- `reports/<run_id>/metrics.json`: Aggregated statistics
+### Auto-Generating Standalone HTML Reports
+
+Generate a rich, standalone single-file HTML report upon experiment completion with `--report`:
+
+```bash
+exetasiz run experiments/basic_qa_demo.yaml --report
+```
+
+Or generate on-demand from any saved run folder:
+```bash
+# Generate report for the newest run and open in browser
+exetasiz report latest --open
+
+# Generate report for a specific run directory
+exetasiz report reports/basic_qa_demo_2026-10-07T22-18-19-537259+00-00
+
+# Custom output file and title
+exetasiz report latest --output my_report.html --title "Sprint Benchmark"
+```
+
+### Listing Saved Evaluation Runs
+
+```bash
+exetasiz list-runs
+```
+
+Output:
+```
+run_directory                                   experiment     finished_at          models                     accuracy
+----------------------------------------------  -------------  -------------------  -------------------------  ----------
+basic_qa_demo_2026-10-07T22-18-19-537259+00-00  basic_qa_demo  2026-10-07 22:18:19  mock-perfect, mock-flawed  75.0%
+```
+
+---
+
+## Reports & Result Persistence
+
+Every evaluation run atomically writes structured artifacts to `reports/<experiment>_<timestamp>/`:
+
+```
+reports/<experiment>_<timestamp>/
+├── config.yaml      # Snapshot of experiment configuration
+├── results.json     # Results envelope (schema_version, metadata, and all EvalResult records)
+├── metrics.json     # Hierarchical metrics (overall, by_model, by_category, by_model_and_category)
+└── report.html      # Standalone single-file HTML report (generated on demand or via --report)
+```
+
+### Results Schema (`results.json`)
+
+The top-level envelope contains:
+- `schema_version`: String version (e.g. `"1.0"`).
+- `run_id`: Unique identifier for the run.
+- `experiment_name`: Name of the experiment from configuration.
+- `started_at` / `finished_at`: ISO 8601 UTC timestamps.
+- `duration_seconds`: Total runtime in seconds.
+- `dataset`: Metadata object (`name`, `path`, `num_test_cases`).
+- `models`: List of evaluated model names.
+- `evaluators`: List of evaluator names used.
+- `exetasiz_version`: Installed Exetasiz version.
+- `results`: Complete list of individual `EvalResult` objects.
+
+#### Schema Version Policy
+- The `schema_version` is currently `"1.0"`.
+- It will be incremented on any breaking schema change to `results.json` or `metrics.json`.
+- `load_run()` validates compatibility and raises `UnsupportedSchemaVersionError` on mismatched versions.
+
+### HTML Report Highlights
+
+The generated `report.html` is **100% self-contained**:
+- **Offline & Portable**: Zero CDN dependencies, zero external fonts, zero external images.
+- **Pure-Python Inline SVG**: Dynamic bar charts for accuracy, latency (Avg vs p95), and grouped category breakdown.
+- **Client-Side Vanilla JS**: Click-to-sort columns on the model comparison table and real-time interactive search/filtering in the Failures Explorer.
+- **Security-Hardened**: All model outputs and prompts are HTML-escaped with strict Jinja2 autoescaping to prevent XSS.
+- **Dark Mode & Print Support**: Adapts automatically to system light/dark appearance and provides a print stylesheet.
+- A pre-rendered sample report is available at [`examples/sample_report.html`](examples/sample_report.html).
 
 ### Category-Level Breakdown
 
