@@ -1,0 +1,34 @@
+name: basic_qa_demo
+dataset: datasets/sample_qa.json
+models:
+  - provider: mock
+    model: mock-perfect
+    name: mock-perfect
+    responses:
+      "What is 15% of 240?": "36"
+      "If a train travels at 60 mph for 2.5 hours, how many miles does it travel?": "150"
+      "What is 7 multiplied by 8?": "56"
+      "What is the capital of France?": "Paris"
+      "Which planet is known as the Red Planet?": "Mars"
+      "Who wrote 'Hamlet'?": "William Shakespeare"
+      "What chemical element has the atomic symbol 'Au'?": "Gold"
+      "Classify the sentiment of: 'I absolutely love this new device!' (positive/negative/neutral)": "positive"
+      "Classify the sentiment of: 'The service was terrible and slow.' (positive/negative/neutral)": "negative"
+      "Classify the animal: 'Eagle' (bird/mammal/reptile)": "bird"
+  - provider: mock
+    model: mock-flawed
+    name: mock-flawed
+    responses:
+      "What is 15% of 240?": "42"
+      "If a train travels at 60 mph for 2.5 hours, how many miles does it travel?": "150"
+      "What is 7 multiplied by 8?": "54"
+      "What is the capital of France?": "Paris"
+      "Which planet is known as the Red Planet?": "Jupiter"
+      "Who wrote 'Hamlet'?": "William Shakespeare"
+      "What chemical element has the atomic symbol 'Au'?": "Silver"
+      "Classify the sentiment of: 'I absolutely love this new device!' (positive/negative/neutral)": "positive"
+      "Classify the sentiment of: 'The service was terrible and slow.' (positive/negative/neutral)": "neutral"
+      "Classify the animal: 'Eagle' (bird/mammal/reptile)": "bird"
+evaluators:
+  - exact_match
+output_dir: reports/

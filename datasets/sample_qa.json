@@ -1,0 +1,65 @@
+{
+  "name": "sample_qa",
+  "test_cases": [
+    {
+      "id": "math_001",
+      "category": "reasoning",
+      "prompt": "What is 15% of 240?",
+      "expected_answer": "36"
+    },
+    {
+      "id": "math_002",
+      "category": "reasoning",
+      "prompt": "If a train travels at 60 mph for 2.5 hours, how many miles does it travel?",
+      "expected_answer": "150"
+    },
+    {
+      "id": "math_003",
+      "category": "reasoning",
+      "prompt": "What is 7 multiplied by 8?",
+      "expected_answer": "56"
+    },
+    {
+      "id": "fact_001",
+      "category": "factual",
+      "prompt": "What is the capital of France?",
+      "expected_answer": "Paris"
+    },
+    {
+      "id": "fact_002",
+      "category": "factual",
+      "prompt": "Which planet is known as the Red Planet?",
+      "expected_answer": "Mars"
+    },
+    {
+      "id": "fact_003",
+      "category": "factual",
+      "prompt": "Who wrote 'Hamlet'?",
+      "expected_answer": "William Shakespeare"
+    },
+    {
+      "id": "fact_004",
+      "category": "factual",
+      "prompt": "What chemical element has the atomic symbol 'Au'?",
+      "expected_answer": "Gold"
+    },
+    {
+      "id": "class_001",
+      "category": "classification",
+      "prompt": "Classify the sentiment of: 'I absolutely love this new device!' (positive/negative/neutral)",
+      "expected_answer": "positive"
+    },
+    {
+      "id": "class_002",
+      "category": "classification",
+      "prompt": "Classify the sentiment of: 'The service was terrible and slow.' (positive/negative/neutral)",
+      "expected_answer": "negative"
+    },
+    {
+      "id": "class_003",
+      "category": "classification",
+      "prompt": "Classify the animal: 'Eagle' (bird/mammal/reptile)",
+      "expected_answer": "bird"
+    }
+  ]
+}
